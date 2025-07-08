@@ -8,6 +8,7 @@ import {
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 
 export type DataModelId = string | number;
+export type DataModelIds<D extends DataModel> = { [id in keyof D]: DataModelId };
 
 export interface DataModel {
   id: DataModelId;
@@ -38,12 +39,13 @@ export type DataField<F extends DataFieldFormValue = DataFieldFormValue> = Remap
   renderFormField?: DataFieldRenderFormField<F>;
 };
 
-export interface DataSource<D extends DataModel> {
+export interface DataSource<D extends DataModel, Params extends { [param: string]: DataModelId } = {}> {
   fields: DataField[];
   getMany?: (params: {
     paginationModel: GridPaginationModel;
     sortModel: GridSortModel;
     filterModel: GridFilterModel;
+    params: Params, // FIXME: figure out how to omit id
   }) => { items: D[]; itemCount: number } | Promise<{ items: D[]; itemCount: number }>;
   getOne?: (id: DataModelId) => D | Promise<D>;
   createOne?: (data: Partial<OmitId<D>>) => D | Promise<D>;

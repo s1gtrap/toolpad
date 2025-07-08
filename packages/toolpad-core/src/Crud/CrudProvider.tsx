@@ -3,13 +3,13 @@ import * as React from 'react';
 import PropTypes from 'prop-types';
 import { CrudContext } from '../shared/context';
 import { DataSourceCache } from './cache';
-import type { DataModel, DataSource } from './types';
+import type { DataModel, DataModelId, DataModelIds, DataSource } from './types';
 
-export interface CrudProviderProps<D extends DataModel> {
+export interface CrudProviderProps<D extends DataModel, Params extends { [param: string]: DataModelId } = {}> {
   /**
    * Server-side [data source](https://mui.com/toolpad/core/react-crud/#data-sources).
    */
-  dataSource: DataSource<D>;
+  dataSource: DataSource<D, Params>;
   /**
    * [Cache](https://mui.com/toolpad/core/react-crud/#data-caching) for the data source.
    */
@@ -26,7 +26,7 @@ export interface CrudProviderProps<D extends DataModel> {
  *
  * - [CrudProvider API](https://mui.com/toolpad/core/api/crud-provider)
  */
-function CrudProvider<D extends DataModel>(props: CrudProviderProps<D>) {
+function CrudProvider<D extends DataModel, Params extends { [param: string]: DataModelId } = {}>(props: CrudProviderProps<D, Params>) {
   const { dataSource, dataSourceCache, children } = props;
 
   const cache = React.useMemo(

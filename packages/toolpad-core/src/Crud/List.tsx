@@ -33,7 +33,7 @@ import { CrudContext, RouterContext } from '../shared/context';
 import { useLocaleText } from '../AppProvider/LocalizationProvider';
 import { DataSourceCache } from './cache';
 import { useCachedDataSource } from './useCachedDataSource';
-import type { DataModel, DataModelId, DataSource } from './types';
+import type { DataModel, DataModelId, DataModelIds, DataSource } from './types';
 import { CRUD_DEFAULT_LOCALE_TEXT, type CRUDLocaleText } from './localeText';
 import { PageContainer, type PageContainerProps } from '../PageContainer';
 import { useActivePage } from '../useActivePage';
@@ -49,13 +49,13 @@ export interface ListSlots {
    * @default DataGrid
    */
   dataGrid?:
-    | React.JSXElementConstructor<DataGridProps>
-    | React.JSXElementConstructor<DataGridProProps>
-    | React.JSXElementConstructor<DataGridPremiumProps>;
+  | React.JSXElementConstructor<DataGridProps>
+  | React.JSXElementConstructor<DataGridProProps>
+  | React.JSXElementConstructor<DataGridPremiumProps>;
   pageContainer?: React.JSXElementConstructor<PageContainerProps>;
 }
 
-export interface ListProps<D extends DataModel> {
+export interface ListProps<D extends DataModel, Params extends { [param: string]: DataModelId } = {}> {
   /**
    * Server-side [data source](https://mui.com/toolpad/core/react-crud/#data-sources).
    */
@@ -103,6 +103,10 @@ export interface ListProps<D extends DataModel> {
    * Locale text for the component.
    */
   localeText?: CRUDLocaleText;
+  /**
+   * TODO: write this
+   */
+  params: Params;
 }
 
 /**
@@ -115,7 +119,7 @@ export interface ListProps<D extends DataModel> {
  *
  * - [List API](https://mui.com/toolpad/core/api/list)
  */
-function List<D extends DataModel>(props: ListProps<D>) {
+function List<D extends DataModel, Params extends { [param: string]: DataModelId } = {}>(props: ListProps<D, Params>) {
   const {
     initialPageSize = 100,
     onRowClick,
@@ -127,6 +131,7 @@ function List<D extends DataModel>(props: ListProps<D>) {
     slots,
     slotProps,
     localeText: propsLocaleText,
+    params,
   } = props;
 
   const globalLocaleText = useLocaleText();
@@ -286,6 +291,7 @@ function List<D extends DataModel>(props: ListProps<D>) {
           paginationModel,
           sortModel,
           filterModel,
+          params: params,
         });
       } catch (listDataError) {
         setError(listDataError as Error);
@@ -407,23 +413,23 @@ function List<D extends DataModel>(props: ListProps<D>) {
         getActions: ({ id }) => [
           ...(onEditClick
             ? [
-                <GridActionsCellItem
-                  key="edit-item"
-                  icon={<EditIcon />}
-                  label={localeText.editLabel}
-                  onClick={handleItemEdit(id)}
-                />,
-              ]
+              <GridActionsCellItem
+                key="edit-item"
+                icon={<EditIcon />}
+                label={localeText.editLabel}
+                onClick={handleItemEdit(id)}
+              />,
+            ]
             : []),
           ...(deleteOne
             ? [
-                <GridActionsCellItem
-                  key="delete-item"
-                  icon={<DeleteIcon />}
-                  label={localeText.deleteLabel}
-                  onClick={handleItemDelete(id)}
-                />,
-              ]
+              <GridActionsCellItem
+                key="delete-item"
+                icon={<DeleteIcon />}
+                label={localeText.deleteLabel}
+                onClick={handleItemDelete(id)}
+              />,
+            ]
             : []),
         ],
       },
@@ -445,11 +451,11 @@ function List<D extends DataModel>(props: ListProps<D>) {
       breadcrumbs={
         activePage && pageTitle
           ? [
-              ...activePage.breadcrumbs,
-              {
-                title: pageTitle,
-              },
-            ]
+            ...activePage.breadcrumbs,
+            {
+              title: pageTitle,
+            },
+          ]
           : undefined
       }
       {...slotProps?.pageContainer}
@@ -508,15 +514,15 @@ function List<D extends DataModel>(props: ListProps<D>) {
                     outline: 'transparent',
                   },
                   [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
-                    {
-                      outline: 'none',
-                    },
+                  {
+                    outline: 'none',
+                  },
                   ...(onRowClick
                     ? {
-                        [`& .${gridClasses.row}:hover`]: {
-                          cursor: 'pointer',
-                        },
-                      }
+                      [`& .${gridClasses.row}:hover`]: {
+                        cursor: 'pointer',
+                      },
+                    }
                     : {}),
                   ...slotProps?.dataGrid?.sx,
                 }}

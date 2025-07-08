@@ -4,7 +4,8 @@
 
 import * as React from 'react';
 import { expect, describe, test, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import type { GetErrorFunction } from '@testing-library/react';
+import { buildQueries, queryHelpers, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import Box from '@mui/material/Box';
@@ -15,8 +16,8 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import { AppProvider, Router } from '../AppProvider';
-import { Crud } from './Crud';
-import type { DataModel, DataSource } from './types';
+import { Crud, type CrudProps } from './Crud';
+import type { DataModel, DataModelId, DataSource } from './types';
 
 type OrderStatus = 'pending' | 'sent';
 type OrderTag = 'gift' | 'fragile' | 'wholesale';
@@ -75,8 +76,45 @@ const INITIAL_ORDERS: Order[] = [
 
 let ordersStore: Order[] = INITIAL_ORDERS;
 
+interface OrderItem extends DataModel {
+  id: number; // FIXME: reconsider if this could also be generic
+  orderId: number;
+  productId: number;
+  quantity: number;
+}
+
+const INITIAL_ORDER_ITEMS: OrderItem[] = [
+  {
+    id: 1,
+    orderId: 1,
+    productId: 1,
+    quantity: 13,
+  },
+  {
+    id: 2,
+    orderId: 2,
+    productId: 2,
+    quantity: 1,
+  },
+  {
+    id: 3,
+    orderId: 2,
+    productId: 3,
+    quantity: 10,
+  },
+  {
+    id: 4,
+    orderId: 2,
+    productId: 4,
+    quantity: 20,
+  },
+]
+
+let orderItemsStore: OrderItem[] = INITIAL_ORDER_ITEMS;
+
 function resetOrdersStore() {
   ordersStore = INITIAL_ORDERS;
+  orderItemsStore = INITIAL_ORDER_ITEMS;
 }
 
 function TagsFormField({
@@ -253,7 +291,89 @@ const ordersDataSource: DataSource<Order> = {
   },
 };
 
-function AppWithRouter({ initialPath = '/' }: { initialPath: string }) {
+const orderItemsDataSource: DataSource<OrderItem, { orderId: string }> = {
+  fields: [
+    { field: 'id', headerName: 'ID' },
+    { field: 'orderId', headerName: 'Order ID' },
+    { field: 'productId', headerName: 'Product ID' },
+    { field: 'quantity', headerName: 'Quantity', type: 'number' },
+  ],
+  getMany: ({ paginationModel, params }) => {
+    const orderItems = orderItemsStore.filter(({ orderId }) => String(orderId) === params.orderId);
+
+    // Apply pagination
+    const start = paginationModel.page * paginationModel.pageSize;
+    const end = start + paginationModel.pageSize;
+    const paginatedOrders = orderItems.slice(start, end);
+
+    return {
+      items: paginatedOrders,
+      itemCount: orderItems.length,
+    };
+  },
+  /*getOne: (orderId) => {
+    const orderToShow = ordersStore.find((order) => order.id === Number(orderId));
+
+    if (!orderToShow) {
+      throw new Error('Order not found');
+    }
+    return orderToShow;
+  },
+  createOne: (data) => {
+    const newOrder = {
+      id: ordersStore.reduce((max, order) => Math.max(max, order.id), 0) + 1,
+      ...data,
+      createdAt: new Date().toISOString(),
+    } as Order;
+
+    ordersStore = [...ordersStore, newOrder];
+
+    return newOrder;
+  },
+  updateOne: (orderId, data) => {
+    let updatedOrder: Order | null = null;
+
+    ordersStore = ordersStore.map((order) => {
+      if (order.id === Number(orderId)) {
+        updatedOrder = { ...order, ...data };
+        return updatedOrder;
+      }
+      return order;
+    });
+
+    if (!updatedOrder) {
+      throw new Error('Order not found');
+    }
+
+    return updatedOrder;
+  },
+  deleteOne: (orderId) => {
+    ordersStore = ordersStore.filter((order) => order.id !== Number(orderId));
+  },
+  validate: (formValues) => {
+    let issues: { message: string; path: [keyof Order] }[] = [];
+
+    if (!formValues.title) {
+      issues = [...issues, { message: 'Title is required', path: ['title'] }];
+    }
+    if (formValues.title && formValues.title.length < 3) {
+      issues = [
+        ...issues,
+        {
+          message: 'Title must be at least 3 characters long',
+          path: ['title'],
+        },
+      ];
+    }
+    if (!formValues.description) {
+      issues = [...issues, { message: 'Description is required', path: ['description'] }];
+    }
+
+    return { issues };
+  },*/
+}
+
+function AppWithRouter<D extends DataModel, Params extends { [param: string]: DataModelId } = {}>({ dataSource, initialPath, rootPath, crudProps }: { dataSource: DataSource<D, Params>, initialPath: string, rootPath: string, crudProps?: Partial<CrudProps<D, Params>> }) {
   const [url, setUrl] = React.useState(() => new URL(initialPath, window.location.origin));
 
   const router = React.useMemo<Router>(() => {
@@ -274,14 +394,25 @@ function AppWithRouter({ initialPath = '/' }: { initialPath: string }) {
       navigation={[{ segment: 'orders', title: 'Orders', pattern: 'orders{/:orderId}*' }]}
       router={router}
     >
-      <Crud
-        dataSource={ordersDataSource}
-        rootPath="/orders"
+      <Crud<D, Params>
+        dataSource={dataSource}
+        rootPath={rootPath}
         defaultValues={{ title: 'New Order' }}
+        {...(crudProps || {})}
       />
     </AppProvider>
   );
 }
+
+const queryAllByDataField = (...args) =>
+  queryHelpers.queryAllByAttribute('data-field', ...args)
+
+const getMultipleError: GetErrorFunction<[string]> = (_c, dataFieldValue) =>
+  `Found multiple elements with the data-field attribute of: ${dataFieldValue}`
+const getMissingError: GetErrorFunction<[string]> = (_c, dataFieldValue) =>
+  `Unable to find an element with the data-field attribute of: ${dataFieldValue}`
+
+const [, , getByDataField] = buildQueries(queryAllByDataField, getMultipleError, getMissingError)
 
 describe('Crud', () => {
   afterEach(() => {
@@ -289,7 +420,7 @@ describe('Crud', () => {
   });
 
   test('renders list items correctly', async () => {
-    render(<AppWithRouter initialPath="/orders" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders" rootPath="/orders" />);
 
     await waitFor(() => {
       expect(screen.getByText('Order 1')).toBeInTheDocument();
@@ -320,7 +451,7 @@ describe('Crud', () => {
   });
 
   test('shows item details correctly', async () => {
-    const { unmount } = render(<AppWithRouter initialPath="/orders/1" />);
+    const { unmount } = render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders/1" rootPath="/orders" />);
 
     await waitFor(() => {
       expect(screen.getByText('Order 1')).toBeInTheDocument();
@@ -334,7 +465,7 @@ describe('Crud', () => {
     expect(screen.queryByText('Order 2')).not.toBeInTheDocument();
 
     unmount();
-    render(<AppWithRouter initialPath="/orders/2" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders/2" rootPath="/orders" />);
 
     await waitFor(() => {
       expect(screen.getByText('Order 2')).toBeInTheDocument();
@@ -350,7 +481,7 @@ describe('Crud', () => {
   });
 
   test('creates new items', async () => {
-    render(<AppWithRouter initialPath="/orders/new" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders/new" rootPath='/orders' />);
 
     await userEvent.type(screen.getByLabelText('Description'), 'I am a new order');
 
@@ -386,7 +517,7 @@ describe('Crud', () => {
   });
 
   test('edits existing items', async () => {
-    render(<AppWithRouter initialPath="/orders/1/edit" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders/1/edit" rootPath='/orders' />);
 
     await waitFor(() => {
       expect(screen.getByLabelText('Title')).toHaveValue('Order 1');
@@ -436,19 +567,19 @@ describe('Crud', () => {
   }, 10000);
 
   test('does not show non-editable items in forms', async () => {
-    render(<AppWithRouter initialPath="/orders/new" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders/new" rootPath='/orders' />);
 
     expect(screen.getAllByLabelText('Max. return date')).toBeTruthy();
     expect(screen.queryByLabelText('Created at')).toBeNull();
 
-    render(<AppWithRouter initialPath="/orders/1/edit" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders/1/edit" rootPath="/orders" />);
 
     expect(screen.getAllByLabelText('Max. return date')).toBeTruthy();
     expect(screen.queryByLabelText('Created at')).toBeNull();
   });
 
   test('deletes items from list view', async () => {
-    render(<AppWithRouter initialPath="/orders" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders" rootPath="/orders" />);
 
     await waitFor(() => {
       expect(screen.getByText('Order 1')).toBeInTheDocument();
@@ -471,7 +602,7 @@ describe('Crud', () => {
   });
 
   test('deletes items from detail view', async () => {
-    render(<AppWithRouter initialPath="/orders/1" />);
+    render(<AppWithRouter dataSource={ordersDataSource} initialPath="/orders/1" rootPath="/orders" />);
 
     await waitFor(() => {
       expect(screen.getByText('Order 1')).toBeInTheDocument();
@@ -487,4 +618,63 @@ describe('Crud', () => {
 
     expect(updatedDataRows).toHaveLength(2);
   });
+
+  test('renders list items correctly for order 1', async () => {
+    render(
+      <AppWithRouter<OrderItem, { orderId: string }>
+        dataSource={orderItemsDataSource}
+        initialPath="/orders/1/items"
+        rootPath="/orders/1/items"
+        crudProps={{ params: { orderId: "1" } }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('13')).toBeInTheDocument(); // NOTE: quantity of second item of order 1 is 13
+    });
+
+    const renderedRows = await screen.findAllByRole('row');
+    const dataRows = renderedRows.slice(1);
+
+    expect(dataRows).toHaveLength(1);
+
+    expect(getByDataField(dataRows[0], 'orderId')).toHaveTextContent("1");
+    expect(getByDataField(dataRows[0], 'productId')).toHaveTextContent("1");
+    expect(getByDataField(dataRows[0], 'quantity')).toHaveTextContent("13");
+  });
+
+  test('renders list items correctly for order 2', async () => {
+    render(
+      <AppWithRouter<OrderItem, { orderId: string }>
+        dataSource={orderItemsDataSource}
+        initialPath="/orders/2/items"
+        rootPath="/orders/2/items"
+        crudProps={{ params: { orderId: "2" } }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('20')).toBeInTheDocument(); // NOTE: quantity of second item of order 2 is 20
+    });
+
+    const renderedRows = await screen.findAllByRole('row');
+    const dataRows = renderedRows.slice(1);
+
+    expect(dataRows).toHaveLength(3);
+
+    expect(getByDataField(dataRows[0], 'orderId')).toHaveTextContent("2");
+    expect(getByDataField(dataRows[0], 'productId')).toHaveTextContent("2");
+    expect(getByDataField(dataRows[0], 'quantity')).toHaveTextContent("1");
+
+    expect(getByDataField(dataRows[1], 'orderId')).toHaveTextContent("2");
+    expect(getByDataField(dataRows[1], 'productId')).toHaveTextContent("3");
+    expect(getByDataField(dataRows[1], 'quantity')).toHaveTextContent("10");
+
+    expect(getByDataField(dataRows[2], 'orderId')).toHaveTextContent("2");
+    expect(getByDataField(dataRows[2], 'productId')).toHaveTextContent("4");
+    expect(getByDataField(dataRows[2], 'quantity')).toHaveTextContent("20");
+  });
 });
+
+
+
