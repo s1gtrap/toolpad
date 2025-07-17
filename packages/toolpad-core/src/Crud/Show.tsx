@@ -26,12 +26,14 @@ import { CRUD_DEFAULT_LOCALE_TEXT, type CRUDLocaleText } from './localeText';
 import { PageContainer, type PageContainerProps } from '../PageContainer';
 import { useActivePage } from '../useActivePage';
 
-export interface ShowProps<D extends DataModel> {
+export interface ShowProps<D extends DataModel, Params extends {
+  [param: string]: DataModelId;
+} = {}> {
   id: DataModelId;
   /**
    * Server-side [data source](https://mui.com/toolpad/core/react-crud/#data-sources).
    */
-  dataSource?: DataSource<D> & Required<Pick<DataSource<D>, 'getOne'>>;
+  dataSource?: DataSource<D, Params> & Required<Pick<DataSource<D, Params>, 'getOne'>>;
   /**
    * Callback fired when the "Edit" button is clicked.
    */
@@ -78,7 +80,9 @@ export interface ShowProps<D extends DataModel> {
  *
  * - [Show API](https://mui.com/toolpad/core/api/show)
  */
-function Show<D extends DataModel>(props: ShowProps<D>) {
+function Show<D extends DataModel, Params extends {
+  [param: string]: DataModelId;
+} = {}>(props: ShowProps<D>) {
   const {
     id,
     onEditClick,
@@ -361,11 +365,11 @@ function Show<D extends DataModel>(props: ShowProps<D>) {
       breadcrumbs={
         activePage && pageTitle
           ? [
-              ...activePage.breadcrumbs,
-              {
-                title: pageTitle,
-              },
-            ]
+            ...activePage.breadcrumbs,
+            {
+              title: pageTitle,
+            },
+          ]
           : undefined
       }
       {...slotProps?.pageContainer}

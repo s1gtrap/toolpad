@@ -400,6 +400,7 @@ function List<D extends DataModel, Params extends { [param: string]: DataModelId
       pinnedColumnsOverride?.left?.includes('actions') ||
       pinnedColumnsOverride?.right?.includes('actions');
 
+    console.log('isActionsColumnPinned', isActionsColumnPinned);
     return [
       ...fields.map((field) => ({
         ...field,
