@@ -623,8 +623,8 @@ importers:
         specifier: ^8.6.0
         version: 8.6.0(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(@types/react@19.1.8)(react@19.1.0))(@mui/material@7.2.0(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(@types/react@19.1.8)(react@19.1.0))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@mui/system@7.2.0(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(@types/react@19.1.8)(react@19.1.0))(@types/react@19.1.8)(react@19.1.0))(@types/react@19.1.8)(date-fns-jalali@2.29.3-0)(dayjs@1.11.13)(luxon@3.6.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@toolpad/utils':
-        specifier: workspace:*
-        version: link:../toolpad-utils/build
+        specifier: ^0.16.0
+        version: 0.16.0(react@19.1.0)
       client-only:
         specifier: ^0.0.1
         version: 0.0.1
@@ -4008,6 +4008,11 @@ packages:
 
   '@toolpad/utils@0.13.0':
     resolution: {integrity: sha512-8zvJWFOkcv6bMXPOczB47DigNu+CqOgLAu7pUv69+1mGVXMO/Gzk2TQhSHTL71eVRChrE1MKQ/PPZsowPHxFYg==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+
+  '@toolpad/utils@0.16.0':
+    resolution: {integrity: sha512-nqM7lk32OJwPFwEJyUoZ1Wvm1qwTlJ+ZP8w+sF9U5rW+ufcEm09sav4h+gwdjx6199B765omqu3AS41nvkWBBw==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
@@ -8737,6 +8742,11 @@ packages:
 
   prettier@3.4.2:
     resolution: {integrity: sha512-e9MewbtFo+Fevyuxn/4rrcDAaq0IYxPGLvObpQjiZBMAzB9IGmzlnG9RZy3FFas+eBMu2vA0CszMeduow5dIuQ==}
+    engines: {node: '>=14'}
+    hasBin: true
+
+  prettier@3.5.3:
+    resolution: {integrity: sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -14088,6 +14098,16 @@ snapshots:
     dependencies:
       invariant: 2.2.4
       prettier: 3.4.2
+      react: 19.1.0
+      react-is: 19.1.0
+      title: 4.0.1
+      yaml: 2.5.1
+      yaml-diff-patch: 2.0.0
+
+  '@toolpad/utils@0.16.0(react@19.1.0)':
+    dependencies:
+      invariant: 2.2.4
+      prettier: 3.5.3
       react: 19.1.0
       react-is: 19.1.0
       title: 4.0.1
@@ -19894,6 +19914,8 @@ snapshots:
   prelude-ls@1.2.1: {}
 
   prettier@3.4.2: {}
+
+  prettier@3.5.3: {}
 
   prettier@3.6.2: {}
 
