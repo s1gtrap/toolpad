@@ -59,7 +59,7 @@ export interface ListProps<D extends DataModel, Params extends { [param: string]
   /**
    * Server-side [data source](https://mui.com/toolpad/core/react-crud/#data-sources).
    */
-  dataSource?: DataSource<D> & Required<Pick<DataSource<D>, 'getMany'>>;
+  dataSource?: DataSource<D, Params> & Required<Pick<DataSource<D>, 'getMany'>>;
   /**
    * Initial number of rows to show per page.
    * @default 100
